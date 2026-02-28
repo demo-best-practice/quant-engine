@@ -20,10 +20,10 @@ CONFIG = {
     "MIN_ROE": 0.15,          # ROE≥15%，强护城河
     "MAX_PE": 25,
     "MAX_DEBT_EQUITY": 150,   # 负债率≤150%，避免黑天鹅
-    "FCF_POSITIVE": True,     # 现金流为正
+    "FCF_POSITIVE": False,     # 现金流为正
     
-    "Z_LIMIT": -1.0,         # Z-Score阈值
-    "RSI_OVERSOLD": 40,      # RSI超卖阈值
+    "Z_LIMIT": -0.8,          # Z-Score阈值
+    "RSI_OVERSOLD": 50,      # RSI超卖阈值
     "LOOKBACK_DAYS": 250,
     
     "PREDICT_STEPS": 10,
@@ -446,11 +446,29 @@ class QuantEngine:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Quant Engine - Stock Screening')
-    parser.add_argument('--api-key', type=str, help='Finnhub API key')
-    parser.add_argument('--scan-size', type=int, default=CONFIG['SCAN_SIZE'], help='Number of stocks to scan')
-    parser.add_argument('--min-mcap', type=float, default=CONFIG['MIN_MCAP'], help='Minimum market cap (亿)')
-    parser.add_argument('--max-pe', type=float, default=CONFIG['MAX_PE'], help='Maximum PE ratio')
-    parser.add_argument('--min-roe', type=float, default=CONFIG['MIN_ROE'], help='Minimum ROE')
+    
+    # API
+    parser.add_argument('--api-key', type=str, required=True, help='Finnhub API key')
+    
+    # 基本面参数
+    parser.add_argument('--scan-size', type=int, default=CONFIG['SCAN_SIZE'], help='扫描股票数量')
+    parser.add_argument('--min-mcap', type=float, default=CONFIG['MIN_MCAP'], help='最小市值(亿)')
+    parser.add_argument('--max-pe', type=float, default=CONFIG['MAX_PE'], help='最大PE值')
+    parser.add_argument('--min-roe', type=float, default=CONFIG['MIN_ROE'], help='最小ROE')
+    parser.add_argument('--max-debt-equity', type=float, default=CONFIG['MAX_DEBT_EQUITY'], help='最大负债率')
+    parser.add_argument('--fcf-positive', type=str, default='false', help='要求FCF为正 (true/false)')
+    
+    # 技术面参数
+    parser.add_argument('--z-limit', type=float, default=CONFIG['Z_LIMIT'], help='Z-Score阈值')
+    parser.add_argument('--rsi-oversold', type=float, default=CONFIG['RSI_OVERSOLD'], help='RSI超卖阈值')
+    parser.add_argument('--min-turnover', type=float, default=CONFIG['MIN_TURNOVER_30D'], help='30日最小成交额(百万美元)')
+    parser.add_argument('--lookback-days', type=int, default=CONFIG['LOOKBACK_DAYS'], help='回看天数')
+    
+    # 预测参数
+    parser.add_argument('--predict-steps', type=int, default=CONFIG['PREDICT_STEPS'], help='预测天数')
+    parser.add_argument('--atr-stop-mult', type=float, default=CONFIG['ATR_STOP_MULT'], help='ATR止损倍数')
+    parser.add_argument('--earnings-buffer', type=int, default=CONFIG['EARNINGS_BUFFER'], help='财报发布日期缓冲天数')
+    
     args = parser.parse_args()
     
     # Override config with CLI args
@@ -458,10 +476,21 @@ if __name__ == "__main__":
     CONFIG['MIN_MCAP'] = args.min_mcap
     CONFIG['MAX_PE'] = args.max_pe
     CONFIG['MIN_ROE'] = args.min_roe
+    CONFIG['MAX_DEBT_EQUITY'] = args.max_debt_equity
+    CONFIG['FCF_POSITIVE'] = args.fcf_positive.lower() == 'true'
+    CONFIG['Z_LIMIT'] = args.z_limit
+    CONFIG['RSI_OVERSOLD'] = args.rsi_oversold
+    CONFIG['MIN_TURNOVER_30D'] = args.min_turnover
+    CONFIG['LOOKBACK_DAYS'] = args.lookback_days
+    CONFIG['PREDICT_STEPS'] = args.predict_steps
+    CONFIG['ATR_STOP_MULT'] = args.atr_stop_mult
+    CONFIG['EARNINGS_BUFFER'] = args.earnings_buffer
     
     print("🚀 启动量化引擎...")
     print("=" * 50)
-    print("📌 特性: 股票池来自Finnhub，基本面数据来自yfinance")
+    print("📌 当前配置:")
+    print(f"   市值≥{CONFIG['MIN_MCAP']}亿 | ROE≥{CONFIG['MIN_ROE']*100}% | PE≤{CONFIG['MAX_PE']} | 负债≤{CONFIG['MAX_DEBT_EQUITY']}%")
+    print(f"   Z-Score<{CONFIG['Z_LIMIT']} | RSI<{CONFIG['RSI_OVERSOLD']} | 成交额≥{CONFIG['MIN_TURNOVER_30D']}M")
     print("=" * 50)
     
     engine = QuantEngine(CONFIG, api_key=args.api_key)
