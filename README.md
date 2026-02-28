@@ -153,7 +153,6 @@ python quant_engine.py --api-key YOUR_KEY \
   --fcf-positive false \
   --z-limit -0.3 \
   --rsi-oversold 50
-  --rsi-oversold 50
 ```
 
 参数：
