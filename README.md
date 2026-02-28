@@ -33,11 +33,20 @@ python quant_engine.py --api-key YOUR_FINNHUB_API_KEY
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|
-| `--api-key` | Finnhub API Key | 必填 |
+| `--api-key` | Finnhub API Key | **必填** |
 | `--scan-size` | 扫描股票数量 | 100 |
 | `--min-mcap` | 最小市值(亿) | 20 |
 | `--max-pe` | 最大PE值 | 25 |
 | `--min-roe` | 最小ROE | 0.15 |
+| `--max-debt-equity` | 最大负债率(%) | 150 |
+| `--fcf-positive` | 要求FCF为正(true/false) | false |
+| `--z-limit` | Z-Score阈值(负值) | -0.8 |
+| `--rsi-oversold` | RSI超卖阈值 | 50 |
+| `--min-turnover` | 30日最小成交额(百万美元) | 50 |
+| `--lookback-days` | 回看天数 | 250 |
+| `--predict-steps` | 预测天数 | 10 |
+| `--atr-stop-mult` | ATR止损倍数 | 2.2 |
+| `--earnings-buffer` | 财报发布日期缓冲天数 | 3 |
 
 ### 完整示例
 
@@ -47,7 +56,10 @@ python quant_engine.py \
   --scan-size 300 \
   --min-mcap 20 \
   --max-pe 20 \
-  --min-roe 0.15
+  --min-roe 0.15 \
+  --max-debt-equity 150 \
+  --z-limit -0.8 \
+  --rsi-oversold 50
 ```
 
 ### 环境变量
@@ -75,9 +87,9 @@ python quant_engine.py
 |------|------|----------|
 | 市值 | 股票总市值 | ≥ 20亿 |
 | ROE | 净资产收益率，越高代表盈利能力越强 | ≥ 15% |
-| PE | 市盈率，越低表示估值越便宜 | ≤ 20 |
+| PE | 市盈率，越低表示估值越便宜 | ≤ 25 |
 | 负债率 | 债务/权益比，越低风险越小 | ≤ 150% |
-| FCF | 自由现金流 | 可选 |
+| FCF | 自由现金流 | 可选（默认关闭）|
 
 ### 阶段三：趋势预测
 
@@ -93,7 +105,11 @@ python quant_engine.py
 python quant_engine.py --api-key YOUR_KEY \
   --min-mcap 20 \
   --max-pe 20 \
-  --min-roe 0.15
+  --min-roe 0.15 \
+  --max-debt-equity 150 \
+  --fcf-positive false \
+  --z-limit -0.8 \
+  --rsi-oversold 50
 ```
 
 参数：
@@ -101,6 +117,7 @@ python quant_engine.py --api-key YOUR_KEY \
 - ROE ≥ 15%
 - PE ≤ 20
 - 负债率 ≤ 150%
+- FCF 不强制要求
 - Z-Score < -0.8
 - RSI < 50
 
@@ -112,7 +129,11 @@ python quant_engine.py --api-key YOUR_KEY \
 python quant_engine.py --api-key YOUR_KEY \
   --min-mcap 10 \
   --max-pe 25 \
-  --min-roe 0.12
+  --min-roe 0.12 \
+  --max-debt-equity 200 \
+  --fcf-positive false \
+  --z-limit -0.5 \
+  --rsi-oversold 55
 ```
 
 参数：
@@ -120,6 +141,7 @@ python quant_engine.py --api-key YOUR_KEY \
 - ROE ≥ 12%
 - PE ≤ 25
 - 负债率 ≤ 200%
+- FCF 不强制要求
 - Z-Score < -0.5
 - RSI < 55
 
@@ -131,7 +153,11 @@ python quant_engine.py --api-key YOUR_KEY \
 python quant_engine.py --api-key YOUR_KEY \
   --min-mcap 5 \
   --max-pe 30 \
-  --min-roe 0.10
+  --min-roe 0.10 \
+  --max-debt-equity 300 \
+  --fcf-positive false \
+  --z-limit -0.3 \
+  --rsi-oversold 60
 ```
 
 参数：
@@ -139,6 +165,7 @@ python quant_engine.py --api-key YOUR_KEY \
 - ROE ≥ 10%
 - PE ≤ 30
 - 负债率 ≤ 300%
+- FCF 不强制要求
 - Z-Score < -0.3
 - RSI < 60
 
