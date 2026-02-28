@@ -9,20 +9,21 @@ from datetime import datetime, timedelta
 from tqdm import tqdm
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
+# 配置说明: MIN_MCAP 单位为"亿"(美元)
 CONFIG = {
     "SCAN_SIZE": 100,
     "REPORT_COUNT": 10,
     
-    "MIN_MCAP": 5000,
-    "MIN_TURNOVER_30D": 50,
+    "MIN_MCAP": 20,           # 最小市值(亿)
+    "MIN_TURNOVER_30D": 50,  # 30日成交额(百万美元)
     
-    "MIN_ROE": 0.12,
+    "MIN_ROE": 0.15,          # ROE≥15%，强护城河
     "MAX_PE": 25,
-    "MAX_DEBT_EQUITY": 150,
-    "FCF_POSITIVE": True,
+    "MAX_DEBT_EQUITY": 150,   # 负债率≤150%，避免黑天鹅
+    "FCF_POSITIVE": True,     # 现金流为正
     
-    "Z_LIMIT": -1.2,
-    "RSI_OVERSOLD": 35,
+    "Z_LIMIT": -1.0,         # Z-Score阈值
+    "RSI_OVERSOLD": 40,      # RSI超卖阈值
     "LOOKBACK_DAYS": 250,
     
     "PREDICT_STEPS": 10,
@@ -171,24 +172,27 @@ class QuantEngine:
                     
                     z_score = (last_price - subset.mean()) / std_dev
                     
+                    # 计算RSI
                     delta = close_series.diff()
                     up = delta.where(delta > 0, 0).tail(14).mean()
                     down = -delta.where(delta < 0, 0).tail(14).mean()
                     rsi = 100 - (100 / (1 + (up / down))) if down != 0 else (100 if up > 0 else 50)
                     
+                    # 技术面筛选：Z-Score + RSI + 成交量
                     if z_score < self.cfg["Z_LIMIT"]:
-                        avg_vol_30d = df['Volume'].tail(30).mean()
-                        avg_price_30d = close_series.tail(30).mean()
-                        turnover_30d = (avg_vol_30d * avg_price_30d) / 1e6
-                        
-                        if turnover_30d >= self.cfg["MIN_TURNOVER_30D"]:
-                            tech_hits.append({
-                                "symbol": sym, 
-                                "z": z_score, 
-                                "rsi": rsi, 
-                                "df": df, 
-                                "price": last_price
-                            })
+                        if rsi < self.cfg["RSI_OVERSOLD"]:
+                            avg_vol_30d = df['Volume'].tail(30).mean()
+                            avg_price_30d = close_series.tail(30).mean()
+                            turnover_30d = (avg_vol_30d * avg_price_30d) / 1e6
+                            
+                            if turnover_30d >= self.cfg["MIN_TURNOVER_30D"]:
+                                tech_hits.append({
+                                    "symbol": sym, 
+                                    "z": z_score, 
+                                    "rsi": rsi, 
+                                    "df": df, 
+                                    "price": last_price
+                                })
                 
                 print(f"进度: {min(i+batch_size, len(symbol_list))}/{len(symbol_list)}")
                 time.sleep(0.5)
@@ -238,7 +242,7 @@ class QuantEngine:
                     })
                     continue
                 
-                # 市值 - yfinance返回的是美元，需要转换为亿美元
+                # 市值 - yfinance返回的是美元
                 mcap = 0
                 
                 if info.get('marketCap'):
@@ -253,9 +257,10 @@ class QuantEngine:
                     except:
                         pass
                 
-                # 转换为亿美元进行判断 (1亿=1e8美元)
+                # 转换为亿（1亿 = 1e8）
                 mcap_100m = mcap / 1e8
                 
+                # 市值过滤（单位：亿）
                 if mcap_100m < self.cfg["MIN_MCAP"]:
                     watchlist.append({
                         "代码": s,
@@ -303,10 +308,10 @@ class QuantEngine:
                 # 行业中值PE
                 sector_pe = self.sector_pe_map.get(sector, 20)
                 
-                # 检查是否达标
+                # 检查是否达标（mcap单位为美元，需要转换为亿）
                 pe_pass = pe <= min(self.cfg["MAX_PE"], sector_pe * 1.1)
                 roe_pass = roe >= self.cfg["MIN_ROE"]
-                mcap_pass = mcap >= self.cfg["MIN_MCAP"] * 1e6
+                mcap_pass = mcap >= self.cfg["MIN_MCAP"] * 1e8  # 亿→美元
                 de_pass = de <= self.cfg["MAX_DEBT_EQUITY"]
                 fcf_pass = fcf > 0 if self.cfg["FCF_POSITIVE"] else True
                 
@@ -443,7 +448,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Quant Engine - Stock Screening')
     parser.add_argument('--api-key', type=str, help='Finnhub API key')
     parser.add_argument('--scan-size', type=int, default=CONFIG['SCAN_SIZE'], help='Number of stocks to scan')
-    parser.add_argument('--min-mcap', type=float, default=CONFIG['MIN_MCAP'], help='Minimum market cap (100M)')
+    parser.add_argument('--min-mcap', type=float, default=CONFIG['MIN_MCAP'], help='Minimum market cap (亿)')
     parser.add_argument('--max-pe', type=float, default=CONFIG['MAX_PE'], help='Maximum PE ratio')
     parser.add_argument('--min-roe', type=float, default=CONFIG['MIN_ROE'], help='Minimum ROE')
     args = parser.parse_args()
