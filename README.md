@@ -6,7 +6,6 @@
 
 - **数据来源**: Finnhub（股票列表）+ yfinance（行情和基本面）
 - **筛选流程**: 技术面初筛 → 基本面审计 → 趋势预测
-- **投资理念**: 保守型价值投资，宁缺毋滥
 
 ## 安装依赖
 
@@ -14,12 +13,6 @@
 pip install yfinance finnhub pandas numpy tqdm statsmodels
 ```
 
-或使用项目自带的虚拟环境：
-
-```bash
-cd /path/to/swing_quant
-./venv/bin/pip install -r requirements.txt
-```
 
 ## 使用方法
 
@@ -35,13 +28,14 @@ python quant_engine.py --api-key YOUR_FINNHUB_API_KEY
 |------|------|--------|
 | `--api-key` | Finnhub API Key | **必填** |
 | `--scan-size` | 扫描股票数量 | 100 |
+| `--report-count` | 输出标的数量 | 10 |
 | `--min-mcap` | 最小市值(亿) | 20 |
 | `--max-pe` | 最大PE值 | 25 |
 | `--min-roe` | 最小ROE | 0.15 |
 | `--max-debt-equity` | 最大负债率(%) | 150 |
 | `--fcf-positive` | 要求FCF为正(true/false) | false |
 | `--z-limit` | Z-Score阈值(负值) | -0.8 |
-| `--rsi-oversold` | RSI超卖阈值 | 50 |
+| `--rsi-oversold` | RSI超卖阈值 | 30 |
 | `--min-turnover` | 30日最小成交额(百万美元) | 50 |
 | `--lookback-days` | 回看天数 | 250 |
 | `--predict-steps` | 预测天数 | 10 |
@@ -54,13 +48,13 @@ python quant_engine.py --api-key YOUR_FINNHUB_API_KEY
 python quant_engine.py \
   --api-key YOUR_FINNHUB_API_KEY \
   --scan-size 300 \
+  --report-count 10 \
   --min-mcap 20 \
   --max-pe 20 \
   --min-roe 0.15 \
   --max-debt-equity 150 \
   --z-limit -0.8 \
-  --rsi-oversold 50
-```
+  --rsi-oversold 30
 
 ### 环境变量
 
@@ -78,6 +72,7 @@ python quant_engine.py
 | 指标 | 说明 | 默认阈值 |
 |------|------|----------|
 | Z-Score | 价格偏离度，负值表示低于均值 | < -0.8 |
+| RSI | 相对强弱指数，低于30表示超卖 | < 30 |
 | RSI | 相对强弱指数，低于50表示超卖 | < 50 |
 | 成交量 | 30日成交额 | ≥ 5000万 |
 
@@ -109,6 +104,55 @@ python quant_engine.py --api-key YOUR_KEY \
   --max-debt-equity 150 \
   --fcf-positive false \
   --z-limit -0.8 \
+  --rsi-oversold 30
+```
+
+参数：
+- 市值 ≥ 20亿
+- ROE ≥ 15%
+- PE ≤ 20
+- 负债率 ≤ 150%
+- FCF 不强制要求
+- Z-Score < -0.8
+- RSI < 30
+
+### 平衡型
+
+兼顾收益和风险：
+
+```bash
+python quant_engine.py --api-key YOUR_KEY \
+  --min-mcap 10 \
+  --max-pe 25 \
+  --min-roe 0.12 \
+  --max-debt-equity 200 \
+  --fcf-positive false \
+  --z-limit -0.5 \
+  --rsi-oversold 40
+```
+
+参数：
+- 市值 ≥ 10亿
+- ROE ≥ 12%
+- PE ≤ 25
+- 负债率 ≤ 200%
+- FCF 不强制要求
+- Z-Score < -0.5
+- RSI < 40
+
+### 激进型
+
+追求高收益，愿意承担更多风险：
+
+```bash
+python quant_engine.py --api-key YOUR_KEY \
+  --min-mcap 5 \
+  --max-pe 30 \
+  --min-roe 0.10 \
+  --max-debt-equity 300 \
+  --fcf-positive false \
+  --z-limit -0.3 \
+  --rsi-oversold 50
   --rsi-oversold 50
 ```
 

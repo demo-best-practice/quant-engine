@@ -23,7 +23,7 @@ CONFIG = {
     "FCF_POSITIVE": False,     # 现金流为正
     
     "Z_LIMIT": -0.8,          # Z-Score阈值
-    "RSI_OVERSOLD": 50,      # RSI超卖阈值
+    "RSI_OVERSOLD": 30,      # RSI超卖阈值
     "LOOKBACK_DAYS": 250,
     
     "PREDICT_STEPS": 10,
@@ -452,6 +452,7 @@ if __name__ == "__main__":
     
     # 基本面参数
     parser.add_argument('--scan-size', type=int, default=CONFIG['SCAN_SIZE'], help='扫描股票数量')
+    parser.add_argument('--report-count', type=int, default=CONFIG['REPORT_COUNT'], help='输出标的数量')
     parser.add_argument('--min-mcap', type=float, default=CONFIG['MIN_MCAP'], help='最小市值(亿)')
     parser.add_argument('--max-pe', type=float, default=CONFIG['MAX_PE'], help='最大PE值')
     parser.add_argument('--min-roe', type=float, default=CONFIG['MIN_ROE'], help='最小ROE')
@@ -473,6 +474,7 @@ if __name__ == "__main__":
     
     # Override config with CLI args
     CONFIG['SCAN_SIZE'] = args.scan_size
+    CONFIG['REPORT_COUNT'] = args.report_count
     CONFIG['MIN_MCAP'] = args.min_mcap
     CONFIG['MAX_PE'] = args.max_pe
     CONFIG['MIN_ROE'] = args.min_roe
