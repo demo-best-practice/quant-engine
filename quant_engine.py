@@ -1,4 +1,5 @@
 import os
+import argparse
 import yfinance as yf
 import finnhub
 import pandas as pd
@@ -9,7 +10,6 @@ from tqdm import tqdm
 from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
 CONFIG = {
-    # "API_KEY": "your_finnhub_api_key_here",  # Set via environment variable: export FINNHUB_API_KEY=xxx
     "SCAN_SIZE": 100,
     "REPORT_COUNT": 10,
     
@@ -85,11 +85,12 @@ class QuantDataFetcher:
             return None
 
 class QuantEngine:
-    def __init__(self, config):
+    def __init__(self, config, api_key=None):
         self.cfg = config
-        api_key = os.environ.get('FINNHUB_API_KEY', '')
         if not api_key:
-            raise ValueError("FINNHUB_API_KEY environment variable not set")
+            api_key = os.environ.get('FINNHUB_API_KEY', '')
+        if not api_key:
+            raise ValueError("Finnhub API key is required. Set via --api-key argument or FINNHUB_API_KEY environment variable")
         self.fc = finnhub.Client(api_key=api_key)
         self.fetcher = QuantDataFetcher()
         self.sector_pe_map = {}
@@ -439,10 +440,24 @@ class QuantEngine:
                     print(f"   {reason}: {count}只")
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Quant Engine - Stock Screening')
+    parser.add_argument('--api-key', type=str, help='Finnhub API key')
+    parser.add_argument('--scan-size', type=int, default=CONFIG['SCAN_SIZE'], help='Number of stocks to scan')
+    parser.add_argument('--min-mcap', type=float, default=CONFIG['MIN_MCAP'], help='Minimum market cap (100M)')
+    parser.add_argument('--max-pe', type=float, default=CONFIG['MAX_PE'], help='Maximum PE ratio')
+    parser.add_argument('--min-roe', type=float, default=CONFIG['MIN_ROE'], help='Minimum ROE')
+    args = parser.parse_args()
+    
+    # Override config with CLI args
+    CONFIG['SCAN_SIZE'] = args.scan_size
+    CONFIG['MIN_MCAP'] = args.min_mcap
+    CONFIG['MAX_PE'] = args.max_pe
+    CONFIG['MIN_ROE'] = args.min_roe
+    
     print("🚀 启动量化引擎...")
     print("=" * 50)
     print("📌 特性: 股票池来自Finnhub，基本面数据来自yfinance")
     print("=" * 50)
     
-    engine = QuantEngine(CONFIG)
+    engine = QuantEngine(CONFIG, api_key=args.api_key)
     engine.run()
